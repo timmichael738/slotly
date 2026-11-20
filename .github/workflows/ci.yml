@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: slotly
+          POSTGRES_PASSWORD: slotly
+          POSTGRES_DB: slotly
+        ports: ['5432:5432']
+        options: --health-cmd "pg_isready -U slotly" --health-interval 5s --health-retries 10
+    env:
+      DATABASE_URL: postgres://slotly:slotly@localhost:5432/slotly
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t slotly .

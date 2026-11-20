@@ -1,0 +1,28 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: slotly
+      POSTGRES_PASSWORD: slotly
+      POSTGRES_DB: slotly
+    ports:
+      - '5432:5432'
+    volumes:
+      - slotly-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U slotly']
+      interval: 5s
+
+  app:
+    build: .
+    environment:
+      DATABASE_URL: postgres://slotly:slotly@postgres:5432/slotly
+      NODE_ENV: production
+    ports:
+      - '3000:3000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  slotly-db:
